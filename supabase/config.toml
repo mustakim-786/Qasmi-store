@@ -1,0 +1,5 @@
+[functions.cloudinary-sign]
+verify_jwt = true
+
+[functions.cloudinary-delete]
+verify_jwt = true
