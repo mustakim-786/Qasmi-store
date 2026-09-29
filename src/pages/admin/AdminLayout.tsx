@@ -18,7 +18,7 @@ export function AdminLayout({ children, active }: { children: ReactNode; active:
 
   return (
     <div className="min-h-screen bg-brand-50">
-      <div className="flex">
+      <div className="flex min-h-screen w-full min-w-0">
         {/* Sidebar */}
         <aside className="sticky top-0 hidden h-screen w-64 flex-shrink-0 flex-col bg-deep text-white lg:flex">
           <div className="flex items-center gap-2 border-b border-white/10 px-6 py-5">
@@ -69,7 +69,7 @@ export function AdminLayout({ children, active }: { children: ReactNode; active:
         </aside>
 
         {/* Mobile top bar */}
-        <div className="flex-1">
+        <div className="w-full min-w-0 flex-1">
           <div className="sticky top-0 z-40 flex items-center justify-between border-b border-brand-100 bg-white px-4 py-3 lg:hidden">
             <span className="font-bold text-brand-500 font-serif">Admin Panel</span>
             <div className="flex items-center gap-2">
@@ -86,24 +86,25 @@ export function AdminLayout({ children, active }: { children: ReactNode; active:
           </div>
 
           {/* Mobile nav */}
-          <div className="flex gap-1 border-b border-brand-100 bg-white px-2 py-2 overflow-x-auto no-scrollbar lg:hidden">
+          <nav aria-label={t('Admin navigation', 'ایڈمن نیویگیشن')} className="grid grid-cols-4 gap-1 border-b border-brand-100 bg-white px-2 py-2 lg:hidden">
             {navItems.map((item) => (
               <Link
                 key={item.key}
                 to={item.path}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-all ${
+                aria-current={active === item.key ? 'page' : undefined}
+                className={`flex min-w-0 items-center justify-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium transition-all sm:gap-1.5 sm:px-2 sm:text-xs ${
                   active === item.key ? 'bg-brand-500 text-white' : 'text-muted hover:bg-brand-50'
                 }`}
               >
-                <item.icon className="h-4 w-4" />
-                {item.label}
+                <item.icon className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{item.label}</span>
               </Link>
             ))}
-          </div>
+          </nav>
 
-          <div className="p-4 sm:p-6 lg:p-8">
+          <main className="min-w-0 p-4 sm:p-6 lg:p-8">
             {children}
-          </div>
+          </main>
         </div>
       </div>
     </div>
