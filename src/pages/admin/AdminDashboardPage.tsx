@@ -7,17 +7,22 @@ import { dataService } from '@/data/dataService';
 import { DonutChart, BarChart, AreaChart } from '@/components/Charts';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import type { Product } from '@/types';
+import { getErrorMessage } from '@/lib/errorMessage';
 
 const CHART_COLORS = ['#2D7D5A', '#C9A96E', '#5B8DBF', '#D4736E', '#8B7AB8', '#6B9B6B'];
 
 export function AdminDashboardPage() {
   const { t } = useLang();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [retryKey, setRetryKey] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [stats, setStats] = useState<{ total: number; perCategory: { category: import('@/types').Category; count: number }[]; outOfStock: number; featured: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setLoadError('');
     (async () => {
       try {
         const [prods, s] = await Promise.all([
@@ -27,12 +32,16 @@ export function AdminDashboardPage() {
         if (cancelled) return;
         setProducts(prods);
         setStats(s);
+      } catch (error) {
+        if (!cancelled) {
+          setLoadError(getErrorMessage(error, 'Could not load dashboard data.'));
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [retryKey]);
 
   const timelineData = useMemo(() => {
     const months: Record<string, number> = {};
@@ -46,10 +55,23 @@ export function AdminDashboardPage() {
     return result.length > 0 ? result : [{ label: 'No data', value: 0 }];
   }, [products]);
 
-  if (loading || !stats) {
+  if (loading) {
     return (
       <AdminLayout active="dashboard">
         <LoadingSpinner />
+      </AdminLayout>
+    );
+  }
+
+  if (loadError || !stats) {
+    return (
+      <AdminLayout active="dashboard">
+        <div className="rounded-xl bg-red-50 p-5 text-red-700" role="alert">
+          <p>{loadError || 'Could not load dashboard data.'}</p>
+          <button type="button" onClick={() => setRetryKey((key) => key + 1)} className="mt-3 font-semibold underline">
+            Retry
+          </button>
+        </div>
       </AdminLayout>
     );
   }

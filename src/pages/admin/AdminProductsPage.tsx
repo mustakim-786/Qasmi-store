@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Plus, Search, Pencil, Trash2, ChevronDown } from 'lucide-react';
 import { useLang } from '@/context/LanguageContext';
 import { Link, useRouter } from '@/context/RouterContext';
@@ -6,6 +6,7 @@ import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { dataService } from '@/data/dataService';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import type { Category, Product, ProductStatus } from '@/types';
+import { getErrorMessage } from '@/lib/errorMessage';
 
 export function AdminProductsPage() {
   const { lang, t } = useLang();
@@ -13,6 +14,7 @@ export function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [categoryMap, setCategoryMap] = useState<Record<string, Category>>({});
 
   const [search, setSearch] = useState('');
@@ -21,23 +23,29 @@ export function AdminProductsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     setLoading(true);
-    const [prods, cats] = await Promise.all([
-      dataService.getProducts(),
-      dataService.getCategories(),
-    ]);
-    setProducts(prods);
-    setCategories(cats);
-    const map: Record<string, Category> = {};
-    cats.forEach((c) => { map[c.id] = c; });
-    setCategoryMap(map);
-    setLoading(false);
-  };
+    setLoadError('');
+    try {
+      const [prods, cats] = await Promise.all([
+        dataService.getProducts(),
+        dataService.getCategories(),
+      ]);
+      setProducts(prods);
+      setCategories(cats);
+      const map: Record<string, Category> = {};
+      cats.forEach((c) => { map[c.id] = c; });
+      setCategoryMap(map);
+    } catch (error) {
+      setLoadError(getErrorMessage(error, 'Could not load products.'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    loadProducts();
-  }, []);
+    void loadProducts();
+  }, [loadProducts]);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -83,6 +91,19 @@ export function AdminProductsPage() {
     return (
       <AdminLayout active="products">
         <LoadingSpinner />
+      </AdminLayout>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AdminLayout active="products">
+        <div className="rounded-xl bg-red-50 p-5 text-red-700" role="alert">
+          <p>{loadError}</p>
+          <button type="button" onClick={() => void loadProducts()} className="mt-3 font-semibold underline">
+            Retry
+          </button>
+        </div>
       </AdminLayout>
     );
   }

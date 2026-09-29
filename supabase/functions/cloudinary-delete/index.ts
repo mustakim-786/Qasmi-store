@@ -11,14 +11,12 @@ function cors(req: Request): HeadersInit | null {
   return { "Access-Control-Allow-Origin": origin, "Vary": "Origin", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey" };
 }
 async function sha1Hex(value: string) { const digest = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(value)); return Array.from(new Uint8Array(digest)).map((part) => part.toString(16).padStart(2, "0")).join(""); }
-function aal(token: string) { try { return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).aal; } catch { return undefined; } }
 async function authorized(req: Request) {
   const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/, "");
   const url = Deno.env.get("SUPABASE_URL"); const anon = Deno.env.get("SUPABASE_ANON_KEY"); const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!token || !url || !anon || !service) return 401;
   const { data, error } = await createClient(url, anon).auth.getUser(token);
   if (error || !data.user) return 401;
-  if (aal(token) !== "aal2") return 403;
   const { data: member } = await createClient(url, service).from("admin_users").select("user_id").eq("user_id", data.user.id).maybeSingle();
   return member ? 200 : 403;
 }

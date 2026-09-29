@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import { useLang } from '@/context/LanguageContext';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
@@ -7,11 +7,13 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { FileUploadArea, type UploadedFile } from '@/components/FileUploadArea';
 import { isHttpsUrl } from '@/lib/urls';
 import type { Category } from '@/types';
+import { getErrorMessage } from '@/lib/errorMessage';
 
 export function AdminCategoriesPage() {
   const { t } = useLang();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [editing, setEditing] = useState<Category | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [nameEn, setNameEn] = useState('');
@@ -21,16 +23,22 @@ export function AdminCategoriesPage() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     setLoading(true);
-    const cats = await dataService.getCategories();
-    setCategories(cats);
-    setLoading(false);
-  };
+    setLoadError('');
+    try {
+      const cats = await dataService.getCategories();
+      setCategories(cats);
+    } catch (loadFailure) {
+      setLoadError(getErrorMessage(loadFailure, 'Could not load categories.'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    loadCategories();
-  }, []);
+    void loadCategories();
+  }, [loadCategories]);
 
   const openForm = (category?: Category) => {
     setEditing(category || null);
@@ -97,6 +105,19 @@ export function AdminCategoriesPage() {
     return (
       <AdminLayout active="categories">
         <LoadingSpinner />
+      </AdminLayout>
+    );
+  }
+
+  if (loadError && !editing && !isNew) {
+    return (
+      <AdminLayout active="categories">
+        <div className="rounded-xl bg-red-50 p-5 text-red-700" role="alert">
+          <p>{loadError}</p>
+          <button type="button" onClick={() => void loadCategories()} className="mt-3 font-semibold underline">
+            Retry
+          </button>
+        </div>
       </AdminLayout>
     );
   }

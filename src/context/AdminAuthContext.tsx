@@ -11,13 +11,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { dataService } from '@/data/dataService';
 
-type AdminAuthStatus = 'loading' | 'signed_out' | 'enroll_mfa' | 'challenge_mfa' | 'ready';
-
-interface MfaEnrollment {
-  factorId: string;
-  qrCode: string;
-  secret: string;
-}
+type AdminAuthStatus = 'loading' | 'signed_out' | 'ready';
 
 interface AdminAuthContextValue {
   status: AdminAuthStatus;
@@ -26,9 +20,6 @@ interface AdminAuthContextValue {
   isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  startMfaEnrollment: () => Promise<MfaEnrollment>;
-  verifyMfaEnrollment: (factorId: string, code: string) => Promise<void>;
-  verifyMfaChallenge: (code: string) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
 }
@@ -81,16 +72,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       throw new Error('This account is not authorized to access the admin panel.');
     }
 
-    const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (assuranceError) throw assuranceError;
-    if (assurance.currentLevel === 'aal2') {
-      setStatus('ready');
-      return;
-    }
-
-    const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
-    if (factorsError) throw factorsError;
-    setStatus(factors.totp.length > 0 ? 'challenge_mfa' : 'enroll_mfa');
+    setStatus('ready');
   }, []);
 
   useEffect(() => {
@@ -142,34 +124,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     await evaluateSession(data.session);
   }, [evaluateSession]);
 
-  const startMfaEnrollment = useCallback(async (): Promise<MfaEnrollment> => {
-    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Qasmi Store Admin' });
-    if (error) throw error;
-    return { factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret };
-  }, []);
-
-  const verifyMfaEnrollment = useCallback(async (factorId: string, code: string) => {
-    const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
-    if (challengeError) throw challengeError;
-    const { error } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code: code.trim() });
-    if (error) throw error;
-    const { data } = await supabase.auth.getSession();
-    await evaluateSession(data.session);
-  }, [evaluateSession]);
-
-  const verifyMfaChallenge = useCallback(async (code: string) => {
-    const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
-    if (factorsError) throw factorsError;
-    const factor = factors.totp[0];
-    if (!factor) throw new Error('No authenticator app is enrolled for this account.');
-    const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: factor.id });
-    if (challengeError) throw challengeError;
-    const { error } = await supabase.auth.mfa.verify({ factorId: factor.id, challengeId: challenge.id, code: code.trim() });
-    if (error) throw error;
-    const { data } = await supabase.auth.getSession();
-    await evaluateSession(data.session);
-  }, [evaluateSession]);
-
   const sendPasswordReset = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${siteUrl().replace(/\/$/, '')}/admin/reset-password`,
@@ -190,9 +144,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: status === 'ready',
       signIn,
       signOut,
-      startMfaEnrollment,
-      verifyMfaEnrollment,
-      verifyMfaChallenge,
       sendPasswordReset,
       updatePassword,
     }}>

@@ -26,16 +26,7 @@ async function sha1Hex(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((part) => part.toString(16).padStart(2, "0")).join("");
 }
 
-function tokenAal(token: string): string | undefined {
-  try {
-    const encoded = token.split(".")[1];
-    if (!encoded) return undefined;
-    const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(atob(base64)).aal;
-  } catch { return undefined; }
-}
-
-async function requireAal2Admin(req: Request) {
+async function requireAdmin(req: Request) {
   const authorization = req.headers.get("authorization") || "";
   const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -45,7 +36,6 @@ async function requireAal2Admin(req: Request) {
   const userClient = createClient(supabaseUrl, publishableKey);
   const { data: userData, error: userError } = await userClient.auth.getUser(token);
   if (userError || !userData.user) return { status: 401 as const };
-  if (tokenAal(token) !== "aal2") return { status: 403 as const };
   const serviceClient = createClient(supabaseUrl, serviceRoleKey);
   const { data: membership, error: membershipError } = await serviceClient
     .from("admin_users").select("user_id").eq("user_id", userData.user.id).maybeSingle();
@@ -60,7 +50,7 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405, cors);
 
   try {
-    const authorization = await requireAal2Admin(req);
+    const authorization = await requireAdmin(req);
     if (authorization.status !== 200) return json({ error: authorization.status === 401 ? "Unauthorized" : "Forbidden" }, authorization.status, cors);
     const body = await req.json() as SignRequest;
     const resourceType = body.resourceType;

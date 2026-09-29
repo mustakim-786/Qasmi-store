@@ -14,7 +14,6 @@ import { AboutPage } from '@/pages/AboutPage';
 import { ContactPage } from '@/pages/ContactPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import AdminLoginPage from '@/pages/admin/AdminLoginPage';
-import AdminMfaPage from '@/pages/admin/AdminMfaPage';
 import AdminResetPasswordPage from '@/pages/admin/AdminResetPasswordPage';
 
 // Admin pages are lazy-loaded so customers never download admin code
@@ -43,8 +42,6 @@ function AdminRoute() {
     return <div className="flex min-h-screen items-center justify-center"><LoadingSpinner /></div>;
   }
   if (status === 'signed_out') return <AdminLoginPage />;
-  if (status === 'enroll_mfa' || status === 'challenge_mfa') return <AdminMfaPage />;
-
   return (
     <Suspense fallback={
       <div className="flex min-h-screen items-center justify-center">
