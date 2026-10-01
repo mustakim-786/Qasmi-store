@@ -22,6 +22,7 @@ export function AdminProductsPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -61,9 +62,10 @@ export function AdminProductsPage() {
     try {
       await dataService.deleteProduct(id);
       setDeleteId(null);
+      setDeleteError('');
       await loadProducts();
-    } catch {
-      // keep dialog so user sees something went wrong
+    } catch (error) {
+      setDeleteError(getErrorMessage(error, 'Failed to delete product.'));
     } finally {
       setDeleting(false);
     }
@@ -115,7 +117,7 @@ export function AdminProductsPage() {
           <h1 className="text-2xl font-bold text-ink sm:text-3xl">{t('Products', 'مصنوعات')}</h1>
           <p className="mt-1 text-muted">{t('Manage your product catalog', 'اپنی مصنوعات کی فہرست منظم کریں')}</p>
         </div>
-        <Link to="/admin/products/new" className="btn-primary">
+        <Link to="/admin/products/new" className="btn-primary" aria-label={t('Add Product', 'مصنوعہ شامل کریں')}>
           <Plus className="h-5 w-5" />
           <span className="hidden sm:inline">{t('Add Product', 'مصنوعہ شامل کریں')}</span>
         </Link>
@@ -200,12 +202,14 @@ export function AdminProductsPage() {
                       <button
                         onClick={() => navigate(`/admin/products/${p.id}/edit`)}
                         className="rounded-lg p-2 text-brand-500 hover:bg-brand-50"
+                        aria-label={t(`Edit ${p.name_en}`, `${p.name_ur} میں ترمیم`)}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => setDeleteId(p.id)}
+                        onClick={() => { setDeleteError(''); setDeleteId(p.id); }}
                         className="rounded-lg p-2 text-red-500 hover:bg-red-50"
+                        aria-label={t(`Delete ${p.name_en}`, `${p.name_ur} حذف کریں`)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -240,12 +244,14 @@ export function AdminProductsPage() {
                   <button
                     onClick={() => navigate(`/admin/products/${p.id}/edit`)}
                     className="rounded-lg p-2 text-brand-500 hover:bg-brand-50"
+                    aria-label={t(`Edit ${p.name_en}`, `${p.name_ur} میں ترمیم`)}
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => setDeleteId(p.id)}
+                    onClick={() => { setDeleteError(''); setDeleteId(p.id); }}
                     className="rounded-lg p-2 text-red-500 hover:bg-red-50"
+                    aria-label={t(`Delete ${p.name_en}`, `${p.name_ur} حذف کریں`)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -265,9 +271,10 @@ export function AdminProductsPage() {
       {/* Delete confirmation */}
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => !deleting && setDeleteId(null)}>
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lift" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-ink">{t('Delete Product?', 'مصنوعہ حذف کریں؟')}</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="delete-product-title" className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lift" onClick={(e) => e.stopPropagation()}>
+            <h3 id="delete-product-title" className="text-lg font-bold text-ink">{t('Delete Product?', 'مصنوعہ حذف کریں؟')}</h3>
             <p className="mt-2 text-sm text-muted">{t('This action cannot be undone.', 'یہ عمل واپس نہیں کیا جا سکتا۔')}</p>
+            {deleteError && <p className="mt-3 text-sm text-red-600" role="alert">{deleteError}</p>}
             <div className="mt-5 flex gap-3">
               <button onClick={() => setDeleteId(null)} className="btn-outline flex-1" disabled={deleting}>{t('Cancel', 'منسوخ')}</button>
               <button

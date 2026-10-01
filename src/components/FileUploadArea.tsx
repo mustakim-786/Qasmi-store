@@ -210,7 +210,7 @@ export function FileUploadArea({
               {file.uploadStatus === 'error' && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-red-500/80 px-1 text-center">
                   <AlertCircle className="h-4 w-4 text-white" />
-                  <span className="mt-0.5 text-[10px] text-white">Failed</span>
+                  <span className="mt-0.5 text-[10px] text-white" role="status">{file.uploadError || 'Upload failed. Remove the file and try again.'}</span>
                 </div>
               )}
 

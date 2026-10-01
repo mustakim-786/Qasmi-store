@@ -6,6 +6,7 @@ import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { dataService } from '@/data/dataService';
 import { FileUploadArea, type UploadedFile, type OptimizationSettings, type CropSettings } from '@/components/FileUploadArea';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { getErrorMessage } from '@/lib/errorMessage';
 import type { Category, MediaAsset, Product, ProductVariant, ProductStatus, UnitType } from '@/types';
 
 const emptyVariant = (): ProductVariant => ({
@@ -178,7 +179,7 @@ export function AdminProductFormPage({ productId }: { productId?: string }) {
       }
       navigate('/admin/products');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('Failed to save product.', 'مصنوعہ محفوظ کرنے میں ناکامی۔'));
+      setError(getErrorMessage(err, t('Failed to save product.', 'مصنوعہ محفوظ کرنے میں ناکامی۔')));
     } finally {
       setSaving(false);
     }

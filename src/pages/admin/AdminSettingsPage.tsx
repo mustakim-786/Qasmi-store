@@ -7,6 +7,7 @@ import { dataService } from '@/data/dataService';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import type { SiteSettings } from '@/types';
 import { isHttpsUrl } from '@/lib/urls';
+import { getErrorMessage } from '@/lib/errorMessage';
 import { useStoreData } from '@/context/StoreDataContext';
 
 export function AdminSettingsPage() {
@@ -74,7 +75,7 @@ export function AdminSettingsPage() {
       setSaved(true);
       window.setTimeout(() => setSaved(false), 2500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('Failed to save settings.', 'ترتیبات محفوظ کرنے میں ناکامی۔'));
+      setError(getErrorMessage(err, t('Failed to save settings.', 'ترتیبات محفوظ کرنے میں ناکامی۔')));
     } finally {
       setSaving(false);
     }
